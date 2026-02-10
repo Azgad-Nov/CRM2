@@ -1,0 +1,64 @@
+# =============================================================================
+# Railway Configuration — CRM Doctor (Multi-Service)
+# =============================================================================
+# Two services per environment:
+#   - frontend: Nginx reverse proxy + static asset server (public)
+#   - backend:  Flask/Gunicorn API + Jinja2 template renderer (internal)
+#
+# Docs: https://docs.railway.com/reference/config-as-code
+# =============================================================================
+
+# --- Frontend Service (Nginx) ---
+# Matches the Railway service named "frontend".
+# Serves static assets directly and proxies all other requests to the backend.
+[services.frontend.build]
+builder = "DOCKERFILE"
+dockerfilePath = "frontend/Dockerfile"
+watchPatterns = [
+    "frontend/static/**",
+    "frontend/Dockerfile",
+    "frontend/nginx.conf"
+]
+
+[services.frontend.deploy]
+healthcheckPath = "/static/css/custom.css"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# Staging: same config, no overrides needed for Nginx
+[services.frontend.environments.staging.deploy]
+# No overrides — Nginx config is the same across environments
+
+# Production: same config
+[services.frontend.environments.production.deploy]
+# No overrides — Nginx config is the same across environments
+
+# --- Backend Service (Flask + Gunicorn) ---
+# Matches the Railway service named "backend".
+# Handles all API routes and Jinja2 template rendering.
+[services.backend.build]
+builder = "DOCKERFILE"
+dockerfilePath = "backend/Dockerfile"
+watchPatterns = [
+    "app.py",
+    "backend/**",
+    "frontend/templates/**",
+    "requirements.txt",
+    "backend/Dockerfile"
+]
+
+[services.backend.deploy]
+startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile -"
+healthcheckPath = "/login"
+healthcheckTimeout = 120
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# Staging: fewer workers to save resources
+[services.backend.environments.staging.deploy]
+startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --access-logfile - --error-logfile -"
+
+# Production: more workers for concurrent users
+[services.backend.environments.production.deploy]
+startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 4 --timeout 120 --access-logfile - --error-logfile -"

@@ -1,0 +1,47 @@
+# =============================================================================
+# .railwayignore — Backend Service
+# =============================================================================
+# Excludes files not needed by the Flask backend service.
+# Backend needs: app.py, backend/, frontend/templates/, frontend/static/,
+#                requirements.txt, Procfile
+# =============================================================================
+
+# Frontend Nginx config (not needed by Flask)
+frontend/Dockerfile
+frontend/nginx.conf
+frontend/.railwayignore
+
+# Testing
+tests/
+pytest.ini
+.pytest_cache
+
+# Version control
+.git
+.gitignore
+
+# IDE and tooling
+.idea
+.vscode
+.claude
+
+# Documentation
+README.md
+CLAUDE.md
+DEPLOYMENT.md
+
+# Environment files
+.env
+.env.*
+
+# Stitch UI prototypes
+clinic_task_kanban_board/
+doctor_crm_dashboard_(rtl)/
+patient_profile_&_medical_history/
+
+# ML models (churn model rebuilt on-the-fly from live data)
+*.joblib
+
+# Scripts and CI
+setup-railway.sh
+.github/

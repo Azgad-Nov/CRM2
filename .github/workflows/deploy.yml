@@ -1,0 +1,115 @@
+# =============================================================================
+# GitHub Actions — Deploy to Railway (Two-Service)
+# =============================================================================
+# Triggers:
+#   - Push to 'dev'  → build/test → deploy to staging
+#   - Push to 'main' → build/test → deploy to production
+#
+# Required GitHub Secrets:
+#   - RAILWAY_TOKEN_STAGING:    Railway project token for staging environment
+#   - RAILWAY_TOKEN_PRODUCTION: Railway project token for production environment
+# =============================================================================
+
+name: Deploy to Railway
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+# Prevent concurrent deploys to the same environment
+concurrency:
+  group: deploy-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  # ===========================================================================
+  # Job 1: Build & Test
+  # ===========================================================================
+  # Validates the application before deploying to any environment.
+  test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # Verify the Flask app factory works (catches import errors, missing deps)
+      - name: Verify app imports
+        run: python -c "from backend import create_app; app = create_app(); print('App factory OK')"
+
+      # Validate both Dockerfiles build successfully
+      - name: Build backend Docker image
+        run: docker build -f backend/Dockerfile -t crm-doctor-backend .
+
+      - name: Build frontend Docker image
+        run: docker build -f frontend/Dockerfile -t crm-doctor-frontend .
+
+      # NOTE: Full pytest suite requires a real Supabase database with seeded data.
+      # To enable tests in CI, add these GitHub Secrets and uncomment the step below:
+      #   SUPABASE_URL, SUPABASE_KEY, SUPABASE_SERVICE_KEY, OPENAI_API_KEY
+      #
+      # - name: Run tests
+      #   env:
+      #     FLASK_SECRET_KEY: ci-test-secret-key
+      #     SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      #     SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+      #     SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+      #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      #   run: pytest tests/ -v --tb=short -x
+
+  # ===========================================================================
+  # Job 2: Deploy to Staging
+  # ===========================================================================
+  # Runs only on push to 'dev' branch, after tests pass.
+  deploy-staging:
+    name: Deploy to Staging
+    needs: test
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    environment:
+      name: staging
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway (staging)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
+        run: railway up --detach
+
+  # ===========================================================================
+  # Job 3: Deploy to Production
+  # ===========================================================================
+  # Runs only on push to 'main' branch, after tests pass.
+  deploy-production:
+    name: Deploy to Production
+    needs: test
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
+      - name: Deploy to Railway (production)
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
+        run: railway up --detach
