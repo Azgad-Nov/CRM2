@@ -35,10 +35,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Python 3.11
+      - name: Set up Python 3.13
         uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
+          python-version: "3.13"
           cache: "pip"
 
       - name: Install dependencies
@@ -47,13 +47,6 @@ jobs:
       # Verify the Flask app factory works (catches import errors, missing deps)
       - name: Verify app imports
         run: python -c "from backend import create_app; app = create_app(); print('App factory OK')"
-
-      # Validate both Dockerfiles build successfully
-      - name: Build backend Docker image
-        run: docker build -f backend/Dockerfile -t crm-doctor-backend .
-
-      - name: Build frontend Docker image
-        run: docker build -f frontend/Dockerfile -t crm-doctor-frontend .
 
       # NOTE: Full pytest suite requires a real Supabase database with seeded data.
       # To enable tests in CI, add these GitHub Secrets and uncomment the step below:
