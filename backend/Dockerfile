@@ -52,9 +52,9 @@ RUN chown -R appuser:appgroup /app
 # Switch to non-root user
 USER appuser
 
-# Railway injects $PORT at runtime; this documents the default
-EXPOSE 5000
+# Railway injects $PORT at runtime; default to 8080 if not set
+ENV PORT=8080
+EXPOSE 8080
 
-# Fallback command for local Docker testing.
-# On Railway, the startCommand in railway.toml takes precedence.
-CMD ["gunicorn", "app:app", "--bind", "0.0.0.0:5000", "--workers", "2", "--timeout", "120"]
+# Shell form to allow $PORT variable expansion at runtime
+CMD gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --timeout 120 --access-logfile - --error-logfile -
