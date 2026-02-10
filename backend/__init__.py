@@ -2,7 +2,7 @@ import os
 from flask import Flask
 
 
-def create_app():
+def create_app():  # noqa: C901
     root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     app = Flask(
