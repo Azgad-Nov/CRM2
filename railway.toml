@@ -12,7 +12,7 @@
 # =============================================================================
 
 [build]
-builder = "NIXPACKS"
+builder = "RAILPACK"
 watchPatterns = [
     "app.py",
     "backend/**",
