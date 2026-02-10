@@ -12,8 +12,7 @@
 # =============================================================================
 
 [build]
-# Use Railway's auto-detection (RAILPACK) — proven to work with this stack.
-# The backend/Dockerfile is available for local development / custom builds.
+builder = "NIXPACKS"
 watchPatterns = [
     "app.py",
     "backend/**",
