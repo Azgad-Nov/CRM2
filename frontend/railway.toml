@@ -1,0 +1,24 @@
+# =============================================================================
+# Railway Configuration — CRM Doctor Frontend (Nginx)
+# =============================================================================
+# This file configures the frontend service (Nginx reverse proxy + static
+# asset server). Set the frontend service's "Config File Path" to
+# /frontend/railway.toml in the Railway dashboard.
+#
+# Docs: https://docs.railway.com/reference/config-as-code
+# =============================================================================
+
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "frontend/Dockerfile"
+watchPatterns = [
+    "frontend/static/**",
+    "frontend/Dockerfile",
+    "frontend/nginx.conf"
+]
+
+[deploy]
+healthcheckPath = "/static/css/custom.css"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
