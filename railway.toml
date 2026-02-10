@@ -30,9 +30,9 @@ healthcheckTimeout = 120
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 5
 
-# Staging: fewer workers to save resources
+# Staging: fewer workers to save resources + debug output
 [environments.staging.deploy]
-startCommand = "gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --access-logfile - --error-logfile -"
+startCommand = "echo '=== Container starting ===' && echo \"PORT=$PORT\" && python -c \"import sys; print(f'Python {sys.version}', flush=True)\" && python -c \"from backend import create_app; app = create_app(); print('Flask app created OK', flush=True)\" && exec gunicorn app:app --bind 0.0.0.0:$PORT --workers 1 --timeout 120 --access-logfile - --error-logfile -"
 
 # Production: more workers for concurrent users
 [environments.production.deploy]
