@@ -1,16 +1,15 @@
 # =============================================================================
-# GitHub Actions — Deploy to Railway (Two-Service)
+# GitHub Actions — CI + Railway Auto-Deploy
 # =============================================================================
 # Triggers:
-#   - Push to 'dev'  → build/test → deploy to staging
-#   - Push to 'main' → build/test → deploy to production
+#   - Push to 'dev'  → test → Railway auto-deploys to staging
+#   - Push to 'main' → test → Railway auto-deploys to production
 #
-# Required GitHub Secrets:
-#   - RAILWAY_TOKEN_STAGING:    Railway project token for staging environment
-#   - RAILWAY_TOKEN_PRODUCTION: Railway project token for production environment
+# Railway handles deployment automatically via GitHub webhook integration.
+# This workflow validates the code before Railway picks up the deploy.
 # =============================================================================
 
-name: Deploy to Railway
+name: CI
 
 on:
   push:
@@ -18,16 +17,12 @@ on:
       - main
       - dev
 
-# Prevent concurrent deploys to the same environment
+# Prevent concurrent runs on the same branch
 concurrency:
-  group: deploy-${{ github.ref_name }}
+  group: ci-${{ github.ref_name }}
   cancel-in-progress: true
 
 jobs:
-  # ===========================================================================
-  # Job 1: Build & Test
-  # ===========================================================================
-  # Validates the application before deploying to any environment.
   test:
     name: Build & Test
     runs-on: ubuntu-latest
@@ -60,49 +55,3 @@ jobs:
       #     SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
       #     OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       #   run: pytest tests/ -v --tb=short -x
-
-  # ===========================================================================
-  # Job 2: Deploy to Staging
-  # ===========================================================================
-  # Runs only on push to 'dev' branch, after tests pass.
-  deploy-staging:
-    name: Deploy to Staging
-    needs: test
-    if: github.ref == 'refs/heads/dev'
-    runs-on: ubuntu-latest
-    environment:
-      name: staging
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway (staging)
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_STAGING }}
-        run: railway up --detach
-
-  # ===========================================================================
-  # Job 3: Deploy to Production
-  # ===========================================================================
-  # Runs only on push to 'main' branch, after tests pass.
-  deploy-production:
-    name: Deploy to Production
-    needs: test
-    if: github.ref == 'refs/heads/main'
-    runs-on: ubuntu-latest
-    environment:
-      name: production
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway (production)
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN_PRODUCTION }}
-        run: railway up --detach
